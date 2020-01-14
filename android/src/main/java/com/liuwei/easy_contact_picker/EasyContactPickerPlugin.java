@@ -6,12 +6,16 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -20,7 +24,7 @@ import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 /** EasyContactPickerPlugin */
-public class EasyContactPickerPlugin implements MethodCallHandler, PluginRegistry.ActivityResultListener {
+public class EasyContactPickerPlugin implements FlutterPlugin, ActivityAware,PluginRegistry.ActivityResultListener ,MethodCallHandler{
 
   private static final String CHANNEL = "plugins.flutter.io/easy_contact_picker";
   // 跳转原生选择联系人页面
@@ -29,22 +33,7 @@ public class EasyContactPickerPlugin implements MethodCallHandler, PluginRegistr
   static final String METHOD_CALL_LIST = "selectContactList";
   private Activity mActivity;
   private ContactsCallBack contactsCallBack;
-
-  // 加个构造函数，入参是Activity
-  private EasyContactPickerPlugin(Activity activity) {
-    // 存起来
-    mActivity = activity;
-  }
-
-  /** Plugin registration. */
-  public static void registerWith(Registrar registrar) {
-    //传入Activity
-    final EasyContactPickerPlugin plugin = new EasyContactPickerPlugin(registrar.activity());
-    final MethodChannel channel = new MethodChannel(registrar.messenger(), CHANNEL);
-    channel.setMethodCallHandler(plugin);
-    //添加跳转页面回调
-    registrar.addActivityResultListener(plugin);
-  }
+  private MethodChannel methodChannel;
 
   @Override
   public void onMethodCall(MethodCall call, final Result result) {
@@ -154,10 +143,47 @@ public class EasyContactPickerPlugin implements MethodCallHandler, PluginRegistr
         HashMap<String, String> map =  new HashMap<String, String>();
         map.put("fullName", contactName);
         map.put("phoneNumber", phoneNum);
-        contactsCallBack.successWithMap(map);
+        if(contactsCallBack != null) {
+          Log.e("affff", contactsCallBack.toString());
+          Log.e("affff", map.toString());
+          contactsCallBack.successWithMap(map);
+        }
       }
     }
     return false;
+  }
+
+  @Override
+  public void onAttachedToEngine(FlutterPluginBinding binding) {
+    methodChannel = new MethodChannel(binding.getBinaryMessenger(), CHANNEL);
+    methodChannel.setMethodCallHandler(this);
+  }
+
+  @Override
+  public void onDetachedFromEngine(FlutterPluginBinding binding) {
+    methodChannel.setMethodCallHandler(null);
+    methodChannel = null;
+  }
+
+  @Override
+  public void onAttachedToActivity(ActivityPluginBinding binding) {
+    mActivity = binding.getActivity();
+    binding.addActivityResultListener(this);
+  }
+
+  @Override
+  public void onDetachedFromActivityForConfigChanges() {
+
+  }
+
+  @Override
+  public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) {
+
+  }
+
+  @Override
+  public void onDetachedFromActivity() {
+    mActivity = null;
   }
 
   /** 获取通讯录回调. */
