@@ -42,7 +42,11 @@ public class EasyContactPickerPlugin implements FlutterPlugin, ActivityAware,Plu
         @Override
         void successWithMap(HashMap<String, String> map) {
           super.successWithMap(map);
-          result.success(map);
+          try {
+            result.success(map);
+          }catch (Exception e){
+
+          }
         }
 
         @Override
